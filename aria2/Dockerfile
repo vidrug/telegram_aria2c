@@ -42,6 +42,7 @@ RUN apk add --no-cache \
     sqlite-libs \
     libssh2 \
     libstdc++ \
+    libintl \
     curl
 
 COPY --from=builder /out/usr/bin/aria2c /usr/bin/aria2c
