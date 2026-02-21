@@ -93,7 +93,10 @@ class Aria2Client:
         return await self._client.unpauseAll()
 
     async def add_torrent(self, torrent_base64: str, options: dict | None = None) -> str:
-        return await self._client.addTorrent(torrent_base64, [], options=options or {})
+        params: list = [torrent_base64, []]
+        if options:
+            params.append(options)
+        return await self._client.jsonrpc("addTorrent", params)
 
     async def change_option(self, gid: str, options: dict) -> str:
         return await self._client.changeOption(gid, options)
