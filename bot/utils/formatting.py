@@ -70,7 +70,8 @@ def format_progress(status: dict) -> str:
     if bt is not None:
         seeders = int(status.get("numSeeders", 0))
         connections = int(status.get("connections", 0))
-        lines.append(f"S: {seeders}  |  Connections: {connections}")
+        leechers = max(0, connections - seeders)
+        lines.append(f"S: {seeders}  L: {leechers}  |  Connections: {connections}")
 
     lines.append(f"Status: <code>{state}</code>  |  GID: <code>{gid}</code>")
     return "\n".join(lines)
@@ -123,7 +124,9 @@ def format_download_list(downloads: list[dict]) -> str:
         bt = d.get("bittorrent")
         if bt is not None:
             seeders = int(d.get("numSeeders", 0))
-            extra = f" S:{seeders}"
+            connections = int(d.get("connections", 0))
+            leechers = max(0, connections - seeders)
+            extra = f" S:{seeders} L:{leechers}"
 
         lines.append(
             f"{'▶' if state == 'active' else '⏸' if state == 'paused' else '⏹'} "

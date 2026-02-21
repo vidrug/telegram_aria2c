@@ -19,11 +19,14 @@ services:
   bot:
     build: ./bot
     env_file: .env
+    privileged: true
     environment:
       - ARIA2_RPC_URL=ws://aria2:6800/jsonrpc
       - DOWNLOAD_DIR=/downloads
+      - USB_MOUNT_PATH=/mnt
     volumes:
       - ./downloads:/downloads
+      - /mnt:/mnt:rslave
     depends_on:
       aria2:
         condition: service_healthy

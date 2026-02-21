@@ -50,6 +50,7 @@ async def main() -> None:
         BotCommand(command="pauseall", description="Pause all downloads"),
         BotCommand(command="resumeall", description="Resume all downloads"),
         BotCommand(command="cancelall", description="Cancel all downloads"),
+        BotCommand(command="copyusb", description="Copy files to USB"),
         BotCommand(command="help", description="Show help"),
     ])
 

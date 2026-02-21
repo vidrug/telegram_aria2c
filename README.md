@@ -7,7 +7,13 @@ Telegram-бот для управления загрузками через aria
 ```bash
 cp .env.example .env
 # Заполните BOT_TOKEN и ALLOWED_USER_ID в .env
-docker compose up --build
+docker compose up -d --build
+```
+
+Логи:
+
+```bash
+docker compose logs -f
 ```
 
 ## Архитектура
