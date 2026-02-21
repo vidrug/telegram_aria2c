@@ -4,6 +4,7 @@ import logging
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
+from aiogram.types import BotCommand
 
 from config import settings
 from aria2_client import Aria2Client
@@ -42,6 +43,15 @@ async def main() -> None:
     dp["progress_updater"] = progress
 
     progress.start()
+
+    await bot.set_my_commands([
+        BotCommand(command="downloads", description="List active downloads"),
+        BotCommand(command="stats", description="aria2c statistics"),
+        BotCommand(command="pauseall", description="Pause all downloads"),
+        BotCommand(command="resumeall", description="Resume all downloads"),
+        BotCommand(command="cancelall", description="Cancel all downloads"),
+        BotCommand(command="help", description="Show help"),
+    ])
 
     try:
         logger.info("Bot started")

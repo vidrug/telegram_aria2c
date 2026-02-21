@@ -3,8 +3,8 @@ services:
     build: ./aria2
     env_file: .env
     ports:
-      - "6881-6999:6881-6999"
-      - "6881-6999:6881-6999/udp"
+      - "6881-6889:6881-6889"
+      - "6881-6889:6881-6889/udp"
     volumes:
       - ./downloads:/downloads
       - aria2-dht:/aria2

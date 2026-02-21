@@ -148,6 +148,8 @@ def format_global_stats(stat: dict) -> str:
 def format_torrent_info(status: dict, files: list[dict]) -> str:
     name = _get_name(status)
     total = int(status.get("totalLength", 0))
+    if total == 0 and files:
+        total = sum(int(f.get("length", 0)) for f in files)
     gid = status.get("gid", "?")
     file_count = len(files)
 
