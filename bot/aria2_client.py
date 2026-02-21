@@ -92,5 +92,14 @@ class Aria2Client:
     async def unpause_all(self) -> str:
         return await self._client.unpauseAll()
 
+    async def add_torrent(self, torrent_base64: str, options: dict | None = None) -> str:
+        return await self._client.addTorrent(torrent_base64, options=options or {})
+
+    async def change_option(self, gid: str, options: dict) -> str:
+        return await self._client.changeOption(gid, options)
+
+    async def get_files(self, gid: str) -> list[dict]:
+        return await self._client.getFiles(gid)
+
     async def get_global_stat(self) -> dict:
         return await self._client.getGlobalStat()

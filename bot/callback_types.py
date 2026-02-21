@@ -8,3 +8,8 @@ class DownloadAction(CallbackData, prefix="dl"):
 
 class ListAction(CallbackData, prefix="list"):
     action: str  # refresh
+
+
+class TorrentAction(CallbackData, prefix="tor"):
+    action: str  # download_all, select_files
+    gid: str

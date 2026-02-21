@@ -9,11 +9,19 @@ from aiogram.types import (
 from aiogram.enums import ParseMode
 
 from aria2_client import Aria2Client
-from callback_types import DownloadAction, ListAction
-from utils.formatting import format_download_list, format_progress
+from callback_types import DownloadAction, ListAction, TorrentAction
+from services.progress_updater import ProgressUpdater
+from utils.formatting import (
+    format_download_list,
+    format_file_list,
+    format_progress,
+)
 
 logger = logging.getLogger(__name__)
 router = Router()
+
+# chat_id -> gid awaiting file selection input
+pending_file_selections: dict[int, str] = {}
 
 
 @router.callback_query(DownloadAction.filter())
@@ -141,3 +149,60 @@ async def on_list_action(
             text, parse_mode=ParseMode.HTML, reply_markup=kb
         )
     await callback.answer()
+
+
+@router.callback_query(TorrentAction.filter())
+async def on_torrent_action(
+    callback: CallbackQuery,
+    callback_data: TorrentAction,
+    aria2: Aria2Client,
+    progress_updater: ProgressUpdater,
+) -> None:
+    gid = callback_data.gid
+    action = callback_data.action
+
+    if action == "download_all":
+        try:
+            await aria2.unpause(gid)
+        except Exception as e:
+            await callback.answer(f"Error: {e}", show_alert=True)
+            return
+
+        try:
+            status = await aria2.tell_status(gid)
+            text = format_progress(status)
+        except Exception:
+            text = f"\U0001F4E5 Download started\nGID: <code>{gid}</code>"
+
+        if callback.message:
+            await callback.message.edit_text(text, parse_mode=ParseMode.HTML)
+            progress_updater.track(
+                gid, callback.message.chat.id, callback.message.message_id
+            )
+
+        await callback.answer("Download started")
+
+    elif action == "select_files":
+        try:
+            files = await aria2.get_files(gid)
+        except Exception as e:
+            await callback.answer(f"Error: {e}", show_alert=True)
+            return
+
+        text = format_file_list(files)
+        chat_id = callback.message.chat.id if callback.message else None
+
+        if chat_id is not None:
+            pending_file_selections[chat_id] = gid
+
+        if callback.message:
+            await callback.message.edit_text(
+                f"\U0001F4CB <b>Select files to download</b>\n\n"
+                f"{text}\n\n"
+                f"Enter file numbers: <code>1,3,5</code> or <code>1-7</code> or <code>1-3,5,7</code>",
+                parse_mode=ParseMode.HTML,
+            )
+        await callback.answer()
+
+    else:
+        await callback.answer()

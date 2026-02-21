@@ -18,13 +18,14 @@ HELP_TEXT = (
     "/help — Show this help\n"
     "/downloads — List active downloads\n"
     "/stats — aria2c statistics\n"
+    "/files &lt;gid&gt; — List torrent files\n"
     "/pause &lt;gid&gt; — Pause download\n"
     "/resume &lt;gid&gt; — Resume download\n"
     "/cancel &lt;gid&gt; — Cancel download\n"
     "/pauseall — Pause all\n"
     "/resumeall — Resume all\n"
     "/cancelall — Cancel all\n\n"
-    "Send any URL to start a download."
+    "Send a URL or <b>.torrent</b> file to start a download."
 )
 
 
