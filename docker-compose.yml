@@ -5,10 +5,11 @@ services:
     volumes:
       - ./downloads:/downloads
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:6800/jsonrpc"]
+      test: ["CMD-SHELL", "wget -qO- --post-data='{\"jsonrpc\":\"2.0\",\"id\":\"hc\",\"method\":\"aria2.getVersion\"}' http://localhost:6800/jsonrpc || exit 1"]
       interval: 5s
       timeout: 3s
       retries: 5
+      start_period: 5s
     restart: unless-stopped
 
   bot:

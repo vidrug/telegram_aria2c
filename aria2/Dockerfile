@@ -6,7 +6,7 @@ RUN mkdir -p /downloads /aria2
 
 COPY aria2.conf /aria2/aria2.conf
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 
 EXPOSE 6800
 
