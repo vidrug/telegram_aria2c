@@ -2,8 +2,12 @@ services:
   aria2:
     build: ./aria2
     env_file: .env
+    ports:
+      - "6881-6999:6881-6999"
+      - "6881-6999:6881-6999/udp"
     volumes:
       - ./downloads:/downloads
+      - aria2-dht:/aria2
     healthcheck:
       test: ["CMD-SHELL", "curl -sf -o /dev/null -d '{\"jsonrpc\":\"2.0\",\"id\":\"hc\",\"method\":\"aria2.getVersion\",\"params\":[\"token:'$ARIA2_RPC_SECRET'\"]}' http://localhost:6800/jsonrpc"]
       interval: 5s
@@ -24,3 +28,6 @@ services:
       aria2:
         condition: service_healthy
     restart: unless-stopped
+
+volumes:
+  aria2-dht:
