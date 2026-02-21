@@ -7,6 +7,7 @@ RUN apk add --no-cache \
     automake \
     libtool \
     pkgconf \
+    gettext-dev \
     openssl-dev \
     c-ares-dev \
     libxml2-dev \
