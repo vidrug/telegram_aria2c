@@ -1,0 +1,25 @@
+services:
+  aria2:
+    build: ./aria2
+    env_file: .env
+    volumes:
+      - ./downloads:/downloads
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:6800/jsonrpc"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  bot:
+    build: ./bot
+    env_file: .env
+    environment:
+      - ARIA2_RPC_URL=ws://aria2:6800/jsonrpc
+      - DOWNLOAD_DIR=/downloads
+    volumes:
+      - ./downloads:/downloads
+    depends_on:
+      aria2:
+        condition: service_healthy
+    restart: unless-stopped
