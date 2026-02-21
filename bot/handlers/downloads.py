@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import logging
 import re
@@ -23,7 +24,30 @@ URL_RE = re.compile(
     r"https?://[^\s<>\"']+|magnet:\?[^\s<>\"']+", re.IGNORECASE
 )
 
+MAGNET_RE = re.compile(r"^magnet:\?", re.IGNORECASE)
+
 FILE_SELECT_RE = re.compile(r"^[\d,\s\-]+$")
+
+
+def _torrent_keyboard(gid: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="\u25B6 Download All",
+                    callback_data=TorrentAction(
+                        action="download_all", gid=gid
+                    ).pack(),
+                ),
+                InlineKeyboardButton(
+                    text="\U0001F4CB Select Files",
+                    callback_data=TorrentAction(
+                        action="select_files", gid=gid
+                    ).pack(),
+                ),
+            ]
+        ]
+    )
 
 
 def _parse_file_indices(text: str) -> set[int]:
@@ -171,26 +195,7 @@ async def handle_torrent_file(
     except Exception:
         text = f"\U0001F9F2 Torrent added (paused)\nGID: <code>{gid}</code>"
 
-    kb = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="\u25B6 Download All",
-                    callback_data=TorrentAction(
-                        action="download_all", gid=gid
-                    ).pack(),
-                ),
-                InlineKeyboardButton(
-                    text="\U0001F4CB Select Files",
-                    callback_data=TorrentAction(
-                        action="select_files", gid=gid
-                    ).pack(),
-                ),
-            ]
-        ]
-    )
-
-    await message.answer(text, parse_mode=ParseMode.HTML, reply_markup=kb)
+    await message.answer(text, parse_mode=ParseMode.HTML, reply_markup=_torrent_keyboard(gid))
 
 
 @router.message(F.text)
@@ -238,17 +243,103 @@ async def handle_url(
         return
 
     for url in urls:
-        try:
-            gid = await aria2.add_uri([url])
-        except Exception as e:
-            await message.answer(f"\u274C Failed to add download: {e}")
-            continue
+        if MAGNET_RE.match(url):
+            # Magnet link: add without pause so metadata can be fetched
+            try:
+                gid = await aria2.add_uri([url])
+            except Exception as e:
+                await message.answer(f"\u274C Failed to add magnet: {e}")
+                continue
 
+            sent = await message.answer(
+                f"\U0001F9F2 Fetching metadata...\nGID: <code>{gid}</code>",
+                parse_mode=ParseMode.HTML,
+            )
+            asyncio.create_task(
+                _wait_for_magnet_metadata(gid, sent, aria2, progress_updater)
+            )
+        else:
+            # Regular URL
+            try:
+                gid = await aria2.add_uri([url])
+            except Exception as e:
+                await message.answer(f"\u274C Failed to add download: {e}")
+                continue
+
+            try:
+                status = await aria2.tell_status(gid)
+                reply_text = format_progress(status)
+            except Exception:
+                reply_text = f"\U0001F4E5 Download added\nGID: <code>{gid}</code>"
+
+            sent = await message.answer(reply_text, parse_mode=ParseMode.HTML)
+            progress_updater.track(gid, sent.chat.id, sent.message_id)
+
+
+async def _wait_for_magnet_metadata(
+    gid: str,
+    sent: Message,
+    aria2: Aria2Client,
+    progress_updater: ProgressUpdater,
+) -> None:
+    """Poll aria2 until magnet metadata is ready, then show torrent UI."""
+    try:
+        for _ in range(30):  # 30 × 2s = 60s timeout
+            await asyncio.sleep(2)
+            try:
+                status = await aria2.tell_status(gid)
+            except Exception:
+                continue
+
+            state = status.get("status")
+
+            # Error / removed — report and stop
+            if state in ("error", "removed"):
+                from utils.formatting import format_error
+                await sent.edit_text(format_error(status), parse_mode=ParseMode.HTML)
+                return
+
+            # Scenario A: metadata appeared on the same GID
+            bt = status.get("bittorrent", {}) or {}
+            info = bt.get("info", {}) or {}
+            if info.get("name"):
+                await aria2.pause(gid)
+                files = await aria2.get_files(gid)
+                text = format_torrent_info(status, files)
+                await sent.edit_text(
+                    text, parse_mode=ParseMode.HTML, reply_markup=_torrent_keyboard(gid)
+                )
+                return
+
+            # Scenario B: metadata GID completed, real download in followedBy
+            if state == "complete":
+                followed = status.get("followedBy", [])
+                if followed:
+                    new_gid = followed[0]
+                    try:
+                        await aria2.pause(new_gid)
+                    except Exception:
+                        pass
+                    new_status = await aria2.tell_status(new_gid)
+                    files = await aria2.get_files(new_gid)
+                    text = format_torrent_info(new_status, files)
+                    await sent.edit_text(
+                        text,
+                        parse_mode=ParseMode.HTML,
+                        reply_markup=_torrent_keyboard(new_gid),
+                    )
+                    return
+
+        # Timeout — fallback to regular tracking
         try:
             status = await aria2.tell_status(gid)
             reply_text = format_progress(status)
         except Exception:
-            reply_text = f"\U0001F4E5 Download added\nGID: <code>{gid}</code>"
-
-        sent = await message.answer(reply_text, parse_mode=ParseMode.HTML)
+            reply_text = (
+                f"\u23F3 Metadata timeout\n"
+                f"GID: <code>{gid}</code>\nTracking as regular download."
+            )
+        await sent.edit_text(reply_text, parse_mode=ParseMode.HTML)
         progress_updater.track(gid, sent.chat.id, sent.message_id)
+    except Exception as e:
+        logger.error("Magnet metadata wait failed for %s: %s", gid, e)
