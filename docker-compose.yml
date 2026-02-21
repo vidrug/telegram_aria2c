@@ -5,7 +5,7 @@ services:
     volumes:
       - ./downloads:/downloads
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- --post-data='{\"jsonrpc\":\"2.0\",\"id\":\"hc\",\"method\":\"aria2.getVersion\"}' http://localhost:6800/jsonrpc || exit 1"]
+      test: ["CMD-SHELL", "curl -sf -o /dev/null -d '{\"jsonrpc\":\"2.0\",\"id\":\"hc\",\"method\":\"aria2.getVersion\"}' http://localhost:6800/jsonrpc"]
       interval: 5s
       timeout: 3s
       retries: 5

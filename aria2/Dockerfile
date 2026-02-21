@@ -1,6 +1,6 @@
 FROM alpine:3.20
 
-RUN apk add --no-cache aria2 wget
+RUN apk add --no-cache aria2 curl
 
 RUN mkdir -p /downloads /aria2
 
