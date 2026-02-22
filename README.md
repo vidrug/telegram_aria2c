@@ -46,6 +46,7 @@ Telegram → aiogram → AuthMiddleware → handlers
 | `ARIA2_RPC_SECRET` | Секрет для RPC-авторизации aria2c | `""` |
 | `ARIA2_RPC_URL` | WebSocket URL aria2c | `ws://aria2:6800/jsonrpc` |
 | `DOWNLOAD_DIR` | Директория загрузок внутри контейнера | `/downloads` |
+| `USB_MOUNT_PATH` | Родительская директория USB-дисков | `/mnt` |
 | `PROGRESS_UPDATE_INTERVAL` | Интервал обновления прогресса (секунды) | `5` |
 
 ## Команды бота
@@ -62,6 +63,7 @@ Telegram → aiogram → AuthMiddleware → handlers
 | `/pauseall` | Пауза всех загрузок |
 | `/resumeall` | Возобновить все загрузки |
 | `/cancelall` | Отменить все загрузки |
+| `/copyusb` | Скопировать файл на USB-флешку |
 | *(любой URL)* | Автоматически ставится на скачивание |
 
 ## Структура проекта
@@ -71,6 +73,10 @@ telegram_aria2c/
 ├── docker-compose.yml
 ├── .env.example
 ├── .gitignore
+├── host/
+│   ├── install.sh
+│   ├── 99-usb-automount.rules
+│   └── usb-mount.sh
 ├── aria2/
 │   ├── Dockerfile
 │   ├── aria2.conf
@@ -103,6 +109,18 @@ telegram_aria2c/
 
 1. **BOT_TOKEN** — откройте [@BotFather](https://t.me/BotFather) в Telegram, создайте бота командой `/newbot`, скопируйте токен.
 2. **ALLOWED_USER_ID** — отправьте любое сообщение боту [@userinfobot](https://t.me/userinfobot), он вернёт ваш числовой ID.
+
+## USB-автомонтирование
+
+Для работы `/copyusb` флешки должны автоматически монтироваться в `/mnt/<label>` на хосте. Установите udev-правило (один раз):
+
+```bash
+cd host && sudo bash install.sh
+```
+
+После этого при подключении USB-флешки она автоматически примонтируется в `/mnt/<метка_диска>` (или `/mnt/sda1` если метки нет). Контейнер видит `/mnt` через bind mount с `rslave` propagation — новые диски появляются мгновенно.
+
+При извлечении флешки она автоматически размонтируется.
 
 ## Настройки aria2c
 
