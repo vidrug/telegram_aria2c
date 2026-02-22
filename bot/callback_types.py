@@ -13,8 +13,3 @@ class ListAction(CallbackData, prefix="list"):
 class TorrentAction(CallbackData, prefix="tor"):
     action: str  # download_all, select_files
     gid: str
-
-
-class UsbAction(CallbackData, prefix="usb"):
-    action: str  # copy
-    idx: int

@@ -46,7 +46,6 @@ Telegram → aiogram → AuthMiddleware → handlers
 | `ARIA2_RPC_SECRET` | Секрет для RPC-авторизации aria2c | `""` |
 | `ARIA2_RPC_URL` | WebSocket URL aria2c | `ws://aria2:6800/jsonrpc` |
 | `DOWNLOAD_DIR` | Директория загрузок внутри контейнера | `/downloads` |
-| `USB_MOUNT_PATH` | Директория с USB-дисками в контейнере | `/usb` |
 | `PROGRESS_UPDATE_INTERVAL` | Интервал обновления прогресса (секунды) | `5` |
 
 ## Команды бота
@@ -63,7 +62,6 @@ Telegram → aiogram → AuthMiddleware → handlers
 | `/pauseall` | Пауза всех загрузок |
 | `/resumeall` | Возобновить все загрузки |
 | `/cancelall` | Отменить все загрузки |
-| `/copyusb` | Скопировать файл на USB-флешку |
 | *(любой URL)* | Автоматически ставится на скачивание |
 
 ## Структура проекта
