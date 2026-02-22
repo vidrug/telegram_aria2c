@@ -1,4 +1,6 @@
 #!/bin/sh
+touch /aria2/session.txt
+
 SECRET_ARG=""
 if [ -n "$ARIA2_RPC_SECRET" ]; then
   SECRET_ARG="--rpc-secret=$ARIA2_RPC_SECRET"
